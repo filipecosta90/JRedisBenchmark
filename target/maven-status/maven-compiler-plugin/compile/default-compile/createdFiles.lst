@@ -1,0 +1,9 @@
+META-INF/CompilerHints
+com/fcosta_oliveira/JRedisBenchmark/JRedisBenchmark.class
+META-INF/BenchmarkList
+com/fcosta_oliveira/JRedisBenchmark/generated/JRedisBenchmark_jmhType_B2.class
+com/fcosta_oliveira/JRedisBenchmark/generated/JRedisBenchmark_Jedis_SET_jmhTest.class
+com/fcosta_oliveira/JRedisBenchmark/generated/JRedisBenchmark_jmhType_B1.class
+com/fcosta_oliveira/JRedisBenchmark/generated/JRedisBenchmark_Jedis_GET_jmhTest.class
+com/fcosta_oliveira/JRedisBenchmark/generated/JRedisBenchmark_jmhType.class
+com/fcosta_oliveira/JRedisBenchmark/generated/JRedisBenchmark_jmhType_B3.class
