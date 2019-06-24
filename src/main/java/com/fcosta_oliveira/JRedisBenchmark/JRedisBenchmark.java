@@ -88,7 +88,7 @@ public class JRedisBenchmark {
     @Benchmark
     public void Jedis_SET(Blackhole bh) {
         Jedis jedis = pool.getResource();
-        if (pipeline > 1) {
+        if (pipeline == 1) {
             jedis.set(keys.get(ThreadLocalRandom.current().nextInt(0, randomkeys)), data);
         } else {
             Pipeline p = jedis.pipelined();
@@ -103,7 +103,7 @@ public class JRedisBenchmark {
     @Benchmark
     public void Jedis_GET(Blackhole bh) {
         Jedis jedis = pool.getResource();
-        if (pipeline > 1) {
+        if (pipeline == 1) {
             jedis.get(keys.get(ThreadLocalRandom.current().nextInt(0, randomkeys)));
         } else {
             Pipeline p = jedis.pipelined();
