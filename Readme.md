@@ -8,6 +8,10 @@ By doing so we will test multithreaded performance of the state objects ( differ
 Java Redis Clients included:
 - [Jedis](https://github.com/xetorthio/jedis)
 
+
+Java Serializers included:
+- [kryo](https://github.com/EsotericSoftware/kryo)
+
 ## Getting started 
 ```
 git clone https://github.com/filipecosta90/JRedisBenchmark.git
@@ -15,19 +19,15 @@ cd JRedisBenchmark
 mvn clean package
 ```
 
-## Simple Test with 1M requests, pipeline of 10, 50 Threads, datasize of 1, with 10 random keys
+## Simple Test ( 5 repetitions ) with 1M requests, pipeline of 100, 1 Threads, datasize of 2048, blocksize of 1000
 Note: make sure that the number of ops per iteration is set to be equal to the pipeline size. 
 ```console
-java -jar target/JRedisBenchmark.jar "JRedisBenchmark"  -i 1 -wi 0 -f 1 -t 50 -r 10 -opi 10 -p pipeline=10 -p randomkeys=10
+mvn clean package && java -jar target/JRedisBenchmark.jar "RedisVsFSBenchmark"  -i 5 -wi 0 -f 1 -t 1  -p pipeline=100 -p datasize=2048 -p blocksize=1000
 ```
 
 ```console
 (...)
-Result "com.fcosta_oliveira.JRedisBenchmark.JRedisBenchmark.Jedis_SET":
-  97.940 us/op
-
-
-# Run complete. Total time: 00:00:42
+# Run complete. Total time: 00:05:03
 
 REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
 why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
@@ -35,10 +35,9 @@ experiments, perform baseline and negative tests that provide experimental contr
 the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
 Do not assume the numbers tell you what you want them to tell.
 
-Benchmark                                  (auth)  (datasize)  (dbnum)   (hostip)  (hostport)  (pipeline)  (randomkeys)  (requests)   Mode  Cnt   Score   Error   Units
-JRedisBenchmark.JRedisBenchmark.Jedis_GET                   1        0  127.0.0.1        6379          10            10     1000000  thrpt        0.538          ops/us
-JRedisBenchmark.JRedisBenchmark.Jedis_SET                   1        0  127.0.0.1        6379          10            10     1000000  thrpt        0.540          ops/us
-JRedisBenchmark.JRedisBenchmark.Jedis_GET                   1        0  127.0.0.1        6379          10            10     1000000   avgt       91.771           us/op
-JRedisBenchmark.JRedisBenchmark.Jedis_SET                   1        0  127.0.0.1        6379          10            10     1000000   avgt       97.940           us/op
-
+Benchmark                                                      (auth)  (blocksize)  (datasize)  (dbnum)  (filesize)   (hostip)  (hostport)  (pipeline)   Mode  Cnt    Score    Error   Units
+JRedisBenchmark.RedisVsFSBenchmark.FS_kryo_writeBlocks                        1000        2048        0   157440000  127.0.0.1        6379         100  thrpt    5   55.108 ± 28.158  ops/ms
+JRedisBenchmark.RedisVsFSBenchmark.Jedis_SET_kryo_writeBlocks                 1000        2048        0   157440000  127.0.0.1        6379         100  thrpt    5  351.909 ± 75.387  ops/ms
+JRedisBenchmark.RedisVsFSBenchmark.FS_kryo_writeBlocks                        1000        2048        0   157440000  127.0.0.1        6379         100   avgt    5    0.019 ±  0.011   ms/op
+JRedisBenchmark.RedisVsFSBenchmark.Jedis_SET_kryo_writeBlocks                 1000        2048        0   157440000  127.0.0.1        6379         100   avgt    5    0.003 ±  0.001   ms/op
 ```

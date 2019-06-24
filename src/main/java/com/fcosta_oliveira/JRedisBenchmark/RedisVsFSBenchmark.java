@@ -1,7 +1,6 @@
 package com.fcosta_oliveira.JRedisBenchmark;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import org.apache.commons.lang3.StringUtils;
 import org.openjdk.jmh.Main;
@@ -21,7 +20,6 @@ import redis.clients.jedis.Pipeline;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
 
@@ -39,9 +37,9 @@ public class RedisVsFSBenchmark {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     static Options opt;
     final Kryo kryo = new Kryo();
-    private int buffersize = 1024 * 1024;
-    final Output output = new Output(buffersize);
-    final Input input = new Input(output.getBuffer());
+    private int bufferSize = 1024 * 1024;
+    // Output for writing to a byte array.
+    private Output output;
     // pipeline size
     @Param({"1"})
     private int pipeline;
@@ -79,8 +77,8 @@ public class RedisVsFSBenchmark {
 
     @Setup
     public void setup(BenchmarkParams params) {
-
-
+        bufferSize = blocksize * datasize * pipeline;
+        LOG.info("Using Kryo buffer size of " + bufferSize);
         data = StringUtils.repeat("x", datasize);
 
         kryo.register(String.class);
@@ -96,6 +94,79 @@ public class RedisVsFSBenchmark {
         LOG.info("Finished Flush DB");
         jedis.close();
     }
+
+    @Benchmark
+    @OperationsPerInvocation(records)
+    public void Jedis_SET_kryo_writeBlocks(Blackhole bh) {
+
+        output = new Output(bufferSize);
+        Jedis jedis = pool.getResource();
+        if (pipeline == 1) {
+            int recordnum = 0;
+            while (recordnum < records) {
+                output.setPosition(0);
+                int blockpos = 0;
+                while (blockpos < blocksize && recordnum < records) {
+                    kryo.writeObject(output, data);
+                    blockpos++;
+                    recordnum++;
+                }
+                // Flushes any buffered bytes and closes the underlying OutputStream, if any.
+                output.close();
+                jedis.set(BigInteger.valueOf(recordnum).toByteArray(), output.toBytes());
+            }
+
+        } else {
+            int recordnum = 0;
+            while (recordnum < records) {
+                Pipeline p = jedis.pipelined();
+                int opNum = 0;
+                while (opNum < pipeline && recordnum < records) {
+                    output.setPosition(0);
+                    int blockpos = 0;
+                    while (blockpos < blocksize && recordnum < records) {
+                        kryo.writeObject(output, data);
+                        blockpos++;
+                        recordnum++;
+                    }
+                    opNum++;
+                    // Flushes any buffered bytes and closes the underlying OutputStream, if any.
+                    output.close();
+                    p.set(BigInteger.valueOf(recordnum).toByteArray(), output.toBytes());
+                }
+                p.sync();
+            }
+        }
+        jedis.close();
+    }
+
+    @Benchmark
+    @OperationsPerInvocation(records)
+    public void FS_kryo_writeBlocks(Blackhole bh) {
+        int filenum = 1;
+        int recordnum = 0;
+        while (recordnum < records) {
+
+            try {
+                Output foutput = new Output(new FileOutputStream("kryo_file" + filenum + ".dat"), bufferSize);
+                foutput.setPosition(0);
+
+                while ((foutput.total() < filesize) && (recordnum < records)) {
+                    kryo.writeObject(foutput, data);
+                    recordnum++;
+                }
+                //Flushes any buffered bytes and closes the underlying OutputStream, if any.
+                foutput.close();
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+
+            filenum++;
+        }
+    }
+
 
 //    @Benchmark
 //    @OperationsPerInvocation(records)
@@ -122,82 +193,6 @@ public class RedisVsFSBenchmark {
 //        }
 //        jedis.close();
 //    }
-
-    @Benchmark
-    @OperationsPerInvocation(records)
-    public void Jedis_SET_kryo_writeBlocks(Blackhole bh) {
-
-        Jedis jedis = pool.getResource();
-        if (pipeline == 1) {
-            int recordnum = 0;
-            while (recordnum < records) {
-                output.setPosition(0);
-                int blockpos = 0;
-                while (blockpos < blocksize && recordnum < records) {
-                    kryo.writeObject(output, data);
-                    blockpos++;
-                    recordnum++;
-                }
-                output.close();
-                jedis.set(BigInteger.valueOf(recordnum).toByteArray(), output.toBytes());
-            }
-
-        } else {
-            int recordnum = 0;
-            while (recordnum < records) {
-                Pipeline p = jedis.pipelined();
-                int opNum = 0;
-                while (opNum < pipeline && recordnum < records) {
-                    output.setPosition(0);
-                    int blockpos = 0;
-                    while (blockpos < blocksize && recordnum < records) {
-                        kryo.writeObject(output, data);
-                        blockpos++;
-                        recordnum++;
-                    }
-                    opNum++;
-                    output.close();
-                    p.set(BigInteger.valueOf(recordnum).toByteArray(), output.toBytes());
-                }
-                p.sync();
-            }
-        }
-        jedis.close();
-    }
-
-    @Benchmark
-    @OperationsPerInvocation(records)
-    public void FS_kryo_writeBlocks(Blackhole bh) {
-        int filenum = 1;
-        int recordnum = 0;
-        while (recordnum < records) {
-
-            int bytelen = 0;
-            try {
-                FileOutputStream fos = new FileOutputStream("kryo_file_" + filenum);
-                while (bytelen < filesize && recordnum < records) {
-                    output.setPosition(0);
-
-                    while (output.position() < (buffersize - datasize) && recordnum < records) {
-                        kryo.writeObject(output, data);
-                        recordnum++;
-                    }
-                    output.close();
-                    fos.write(output.toBytes());
-                    fos.flush();
-                    bytelen += output.position();
-                }
-                fos.close();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
-            filenum++;
-        }
-    }
 
 //    /*@Benchmark
 //    @OperationsPerInvocation(records)
