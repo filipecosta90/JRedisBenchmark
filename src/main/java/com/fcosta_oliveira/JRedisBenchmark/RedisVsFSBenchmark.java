@@ -97,31 +97,31 @@ public class RedisVsFSBenchmark {
         jedis.close();
     }
 
-    @Benchmark
-    @OperationsPerInvocation(records)
-    public void Jedis_SET_kryo(Blackhole bh) {
-        Jedis jedis = pool.getResource();
-        if (pipeline == 1) {
-            for (int recordnum = 0; recordnum < records; recordnum++) {
-                output.setPosition(0);
-                kryo.writeObject(output, data);
-                output.close();
-                jedis.set(BigInteger.valueOf(recordnum).toByteArray(), output.toBytes());
-            }
-        } else {
-            for (int recordnum = 0; recordnum < records; recordnum++) {
-                Pipeline p = jedis.pipelined();
-                for (int opNum = 0; opNum < pipeline; opNum++) {
-                    output.setPosition(0);
-                    kryo.writeObject(output, data);
-                    output.close();
-                    p.set(BigInteger.valueOf(recordnum).toByteArray(), output.toBytes());
-                }
-                p.sync();
-            }
-        }
-        jedis.close();
-    }
+//    @Benchmark
+//    @OperationsPerInvocation(records)
+//    public void Jedis_SET_kryo(Blackhole bh) {
+//        Jedis jedis = pool.getResource();
+//        if (pipeline == 1) {
+//            for (int recordnum = 0; recordnum < records; recordnum++) {
+//                output.setPosition(0);
+//                kryo.writeObject(output, data);
+//                output.close();
+//                jedis.set(BigInteger.valueOf(recordnum).toByteArray(), output.toBytes());
+//            }
+//        } else {
+//            for (int recordnum = 0; recordnum < records; recordnum++) {
+//                Pipeline p = jedis.pipelined();
+//                for (int opNum = 0; opNum < pipeline; opNum++) {
+//                    output.setPosition(0);
+//                    kryo.writeObject(output, data);
+//                    output.close();
+//                    p.set(BigInteger.valueOf(recordnum).toByteArray(), output.toBytes());
+//                }
+//                p.sync();
+//            }
+//        }
+//        jedis.close();
+//    }
 
     @Benchmark
     @OperationsPerInvocation(records)
@@ -199,24 +199,24 @@ public class RedisVsFSBenchmark {
         }
     }
 
-    @Benchmark
-    @OperationsPerInvocation(records)
-    public void Jedis_SET_plaint(Blackhole bh) {
-        Jedis jedis = pool.getResource();
-        if (pipeline == 1) {
-            for (int recordnum = 0; recordnum < records; recordnum++) {
-                jedis.set(String.valueOf(recordnum), data);
-            }
-        } else {
-            for (int recordnum = 0; recordnum < records; recordnum++) {
-                Pipeline p = jedis.pipelined();
-                for (int opNum = 0; opNum < pipeline; opNum++) {
-                    p.set(String.valueOf(recordnum), data);
-                }
-                p.sync();
-            }
-        }
-        jedis.close();
-    }
+//    /*@Benchmark
+//    @OperationsPerInvocation(records)
+//    public void Jedis_SET_plaint(Blackhole bh) {
+//        Jedis jedis = pool.getResource();
+//        if (pipeline == 1) {
+//            for (int recordnum = 0; recordnum < records; recordnum++) {
+//                jedis.set(String.valueOf(recordnum), data);
+//            }
+//        } else {
+//            for (int recordnum = 0; recordnum < records; recordnum++) {
+//                Pipeline p = jedis.pipelined();
+//                for (int opNum = 0; opNum < pipeline; opNum++) {
+//                    p.set(String.valueOf(recordnum), data);
+//                }
+//                p.sync();
+//            }
+//        }
+//        jedis.close();
+//    }*/
 
 }
